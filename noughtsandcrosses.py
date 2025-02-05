@@ -3,18 +3,24 @@ import os.path
 import json
 
 random.seed()
+win_pattern = [
+    [[0, 0], [0, 1], [0, 2]],  # Row 1
+    [[1, 0], [1, 1], [1, 2]],  # Row 2
+    [[2, 0], [2, 1], [2, 2]],  # Row 3
+    [[0, 0], [1, 0], [2, 0]],  # Column 1
+    [[0, 1], [1, 1], [2, 1]],  # Column 2
+    [[0, 2], [1, 2], [2, 2]],  # Column 3
+    [[0, 0], [1, 1], [2, 2]],  # Diagonal 1
+    [[0, 2], [1, 1], [2, 0]],  # Diagonal 2
+]
 
 
 def draw_board(board):
     # develop code to draw the board
-    a = [[1, 0, 0], [1, 1, 0], [0, 0, 1]]
-    for i in a:
+    for row in board:
         print("-----------------".center(22))
-        for j in i:
-            if j == 0:
-                print(f" | O |", end=" ")
-            else:
-                print(f" | X |", end=" ")
+        for cell in row:
+            print(f" | {cell} |", end=" ")
         print("")
     print("-----------------".center(22))
     pass
@@ -29,13 +35,13 @@ def welcome(board):
 
 def initialise_board(board):
     # develop code to set all elements of the board to one space ' '
-    for row in len(board):
-        for column in len(board[row]):
-            board[row][column] = ""
+    for row in range(len(board)):
+        for column in range(len(board[row])):
+            board[row][column] = " "
     return board
 
 
-def get_player_move(board):
+def get_player_move(board, user_moves):
     # develop code to ask the user for the cell to put the X in,
     # and return row and col
     rows_cols = {
@@ -58,16 +64,81 @@ def get_player_move(board):
         elif player_move not in "123456789":
             print("Invalid Move")
         else:
-            player_move = int(player_move)
+            grouped_moves = []
+            row, col = rows_cols[int(player_move)]
+            if board[row][col] == " ":
+                user_moves.append([row, col])
+            for pattern in win_pattern:
+                matched = []
+                for move in user_moves:
+                    if move in pattern:
+                        matched.append(move)
+                if len(matched) > 0:
+                    grouped_moves.append(matched)
+                # break
+            else:
+                print("Cell is already occupied! Try again.")
             break
-    row, col = rows_cols[player_move]
-    return row, col
+    return row, col, grouped_moves
 
 
-def choose_computer_move(board):
-    # develop code to let the computer chose a cell to put a nought in
-    # and return row and col
-    
+def choose_computer_move(board, user_moves):
+    # Your custom move logic goes here
+    rows_cols = {
+        1: [0, 0],
+        2: [0, 1],
+        3: [0, 2],
+        4: [1, 0],
+        5: [1, 1],
+        6: [1, 2],
+        7: [2, 0],
+        8: [2, 1],
+        9: [2, 2],
+    }
+
+    while True:
+        # Tracking user's possible winning moves
+        highest_length_list = [val for val in user_moves if len(val) > 1]
+        req = []
+        if highest_length_list:
+            highest_length = highest_length_list[-1]
+            highest_length_list.pop()
+        else:
+            highest_length = []
+        if highest_length:
+            for pattern in win_pattern:
+                match_count = 0
+                for move in highest_length:
+                    if move in pattern:
+                        match_count += 1
+                if match_count >= 2:
+                    req = pattern
+                    break
+            difference = (
+                [item for item in req if item not in highest_length] if req else []
+            )
+            print("Difference", difference)
+            if difference:
+                # Iterate over the difference list until an empty candidate is found.
+                candidate_found = False
+                while difference:
+                    candidate = difference[0]
+                    print("Candidate", candidate)
+                    r, c = candidate
+                    if board[r][c] == " ":
+                        row, col = candidate
+                        candidate_found = True
+                        break
+                    else:
+                        difference.pop(0)  # Remove candidate if not empty
+                if not candidate_found:
+                    random_number = random.randint(1, 9)
+                    row, col = rows_cols[random_number]  # Fallback move
+        else:
+            random_number = random.randint(1, 9)
+            row, col = rows_cols[random_number]
+        if board[row][col] == " ":
+            break
     return row, col
 
 
@@ -79,8 +150,7 @@ def check_for_win(board, mark):
         col_match = True
         for j in range(3):
             if board[i][j] != mark:
-                rows_match = True
-                break
+                rows_match = False
             if board[j][i] != mark:
                 col_match = False
         if rows_match or col_match:
@@ -97,6 +167,9 @@ def check_for_win(board, mark):
 def check_for_draw(board):
     # develop cope to check if all cells are occupied
     # return True if it is, False otherwise
+    for row in board:
+        if " " in row:
+            return False
     return True
 
 
@@ -119,14 +192,23 @@ def play_game(board):
     # if drawn, return 0 for the score
     # repeat the loop
     initialise_board(board)
-    player_row, player_col = get_player_move()
-    board[player_row][player_col] = "X"
-    draw_board(board)
-    if check_for_win(board, "X"):
-        return 1
-    if check_for_draw(board):
-        return 0
-    computer_col, computer_row = choose_computer_move()
+    user_moves = []
+    while True:
+        # Player's move
+        player_row, player_col, grouped_moves = get_player_move(board, user_moves)
+        board[player_row][player_col] = "X"
+        draw_board(board)
+        if check_for_win(board, "X"):
+            return 1
+        if check_for_draw(board):
+            return 0
+        computer_row, computer_col = choose_computer_move(board, grouped_moves)
+        board[computer_row][computer_col] = "O"
+        draw_board(board)
+        if check_for_win(board, "O"):
+            return -1
+        if check_for_draw(board):
+            return 0
 
 
 def menu():
@@ -155,16 +237,35 @@ def load_scores():
     # return the scores in a Python dictionary
     # with the player names as key and the scores as values
     # return the dictionary in leaders
+    try:
+        with open("leaderboard.txt", "r") as f:
+            leaders = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        leaders = {}
     return leaders
 
 
 def save_score(score):
     # develop code to ask the player for their name
     # and then save the current score to the file 'leaderboard.txt'
+    player_name = input("Enter your name: ")
+    existing_players = load_scores()
+    if player_name in existing_players:
+        existing_players[player_name] += score
+    else:
+        existing_players[player_name] = score
+    with open("leaderboard.txt", "w") as f:
+        json.dump(existing_players, f)
+    print("Saved")
     return
 
 
 def display_leaderboard(leaders):
     # develop code to display the leaderboard scores
     # passed in the Python dictionary parameter leader
+    print("Shown")
+    for player, score in sorted(
+        leaders.items(), key=lambda item: item[1], reverse=True
+    ):
+        print(f"{player}: {score}")
     pass

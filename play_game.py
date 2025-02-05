@@ -26,7 +26,6 @@ def main():
             return
 
 
-    
 # Program execution begins here
 if __name__ == '__main__':
-    main()
+    main() 
