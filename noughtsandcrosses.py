@@ -68,6 +68,7 @@ def get_player_move(board, user_moves):
             row, col = rows_cols[int(player_move)]
             if board[row][col] == " ":
                 user_moves.append([row, col])
+            # Grouping matched moves by comparing with win_pattern
             for pattern in win_pattern:
                 matched = []
                 for move in user_moves:
@@ -75,7 +76,6 @@ def get_player_move(board, user_moves):
                         matched.append(move)
                 if len(matched) > 0:
                     grouped_moves.append(matched)
-                # break
             else:
                 print("Cell is already occupied! Try again.")
             break
@@ -98,9 +98,11 @@ def choose_computer_move(board, user_moves):
 
     while True:
         # Tracking user's possible winning moves
+        # Exctracting probable threats; 1 or more moves left to win
         highest_length_list = [val for val in user_moves if len(val) > 1]
         req = []
         if highest_length_list:
+            # Extracting the latest addition
             highest_length = highest_length_list[-1]
             highest_length_list.pop()
         else:
@@ -130,7 +132,7 @@ def choose_computer_move(board, user_moves):
                         candidate_found = True
                         break
                     else:
-                        difference.pop(0)  # Remove candidate if not empty
+                        difference.pop(0)  # Remove candidate if cell is not empty
                 if not candidate_found:
                     random_number = random.randint(1, 9)
                     row, col = rows_cols[random_number]  # Fallback move
